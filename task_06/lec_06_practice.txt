@@ -1,0 +1,46 @@
+sudo apt install nginx
+service nginx stop
+
+sudo apt install docker.io
+docker start --help
+sudo docker info
+sudo docker run -i -t ubuntu:16.04 /bin/bash
+exit
+sudo docker ps -a
+sudo docker start 07d719d1cae3
+sudo docker inspect 07d719d1cae3
+sudo docker inspect kind_noether
+sudo docker stop kind_noether
+sudo docker rm kind_noether
+sudo docker images
+sudo docker network ls
+sudo docker network lnspect <id сети>
+
+https://docs.docker.com/engine/reference/builder/ - справка по docker
+
+nano Dockerfile
+Dockerfile:
+FROM ubuntu:16.04
+RUN apt-get update
+RUN apt-get install -y nginx
+EXPOSE 80
+RUN rm -f /var/www/html/*
+ADD index.html /var/www/html/
+CMD ["nginx", "-g", "daemon off;"]
+
+nano index.html
+
+docker build -t mydockerapp .
+docker run -d -p 80:80 mydockerapp
+
+https://docs.docker.com/registry/ - локальный регистр образов docker, arifactory, nexus - репозитории с GUI
+
+docker image tag <имя образа> <url репозитория>
+docker push <url репозитория>
+docker pull <url репозитория>
+
+https://hub.docker.com/_/nginx - готовый образ
+
+https://alpinelinux.org/ - легковеный образ linux
+
+https://www.portainer.io/ - веб интерфейс для докера

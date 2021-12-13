@@ -1,0 +1,25 @@
+sudo su
+apt install maven
+apt install git
+apt install tomcat
+apt install default-jdk
+
+Исходный код java:
+https://github.com/boxfuse/boxfuse-sample-java-war-hello
+
+Запуск системы сборки:
+cd /home/user/boxfuse-sample-java-war-hello/
+mvn package
+
+Файл скомпилированного веб приложения (артефакт):
+/home/user/boxfuse-sample-java-war-hello/target
+
+Рабочая дирректория tomcat по умолчанию:
+/var/lib/tomcat9/webapps/hello-1.0.war
+
+Скопировать hello-1.0.war в рабочую дирректорию tomcat.
+Через некоторое время tomcat распакует это приложение.
+
+Доступ к веб страничке boxfuse: http://localhost:8080/hello-1.0/
+
+nexus, jfrog - менеджеры артефактов

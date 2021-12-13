@@ -1,0 +1,18 @@
+sudo apt update
+sudo apt install unzip
+chmod terraform
+cp terraform /bin/terraform
+nano docker.tf
+terraform init
+terraform plan -out config.tfplan
+terraform apply
+terraform show
+terraform destroy
+docker ps -a
+nano aws tf
+sudo apt install awscli
+aws configure
+aws s3 ls
+terraform init
+terraform plan -out config.tfplan
+terraform show

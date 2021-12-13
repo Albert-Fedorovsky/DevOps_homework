@@ -1,0 +1,60 @@
+---
+- name: flask_app delivery
+  hosts: servers
+  become: yes
+
+  tasks:
+  - name: Ensure subversion is present
+    apt:
+     name: subversion
+     state: present
+
+  - name: Ensure python-pip is present
+    apt:
+     name: "{{ packages }}"
+     state: present
+    vars:
+      packages:
+      - python-pip
+      - python3-pip
+
+  - name: Copy flask_app.service file
+    copy:
+     src: flask_app.service
+     dest: /lib/systemd/system/flask_app.service
+     owner: root
+     group: root
+     mode: u=rw,g=r,o=r
+
+  - name: Ensure flask_app.service is stopped
+    service:
+     name: flask_app
+     state: stopped
+
+# По непонятной причине модуль pip не устанавлевает flask
+# в рабочее окружение.
+#  - name: Ensure flask is present
+#    pip:
+#     name: flask
+#     umask: "0777"
+#     state: present
+#    become: True
+
+# Пришлось реализовать установку flask скриптом
+  - name: Install flask
+    script: /etc/ansible/playbooks/flask_install.sh
+
+# Модуль svn Ansible не доставляет отдельную папку из моего
+# репозитория домашних заданий github. Пришлось писать скрипт.
+  - name: Download new version of flask_app from github
+    script: /etc/ansible/playbooks/flask_app_delivery.sh
+
+  - name: Check flask_app.service is enabled
+    service:
+     name: flask_app
+     enabled: yes
+
+  - name: Ensure flask_app.service is started
+    service:
+     name: flask_app
+     state: started
