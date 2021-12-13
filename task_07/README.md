@@ -14,9 +14,9 @@
 
 **Регистрация на Microsoft Azure:**
 
-Прошёл регистрацию на portal.azure.com
+Прошёл регистрацию на azure.com
 
-Авторизовался через свою учётную запись.
+Авторизовался в своей консоли управления на https://portal.azure.com
 
 **Создание вирутальной машины через консоль AWS:**
 
@@ -83,31 +83,7 @@ sudo apt-get update
 
 sudo apt-get install azure-cli
 
-**Конфигурация AWS CLI на Ubuntu_20**
-
-aws configure
-
-AWS Access Key ID [None]:  `<Access key ID>`
-
-AWS Secret Access Key [None]: ` <Secret access key>`
-
-Default region name [None]: `eu-central-1`
-
-Default output format [None]: `json`
-
-**Создание и импорт новой пары ключей для ec2 инстансов через AWS CLI на Ubuntu_20**
-
-ssh-keygen -t rsa -C "my-key" -f ./my-key
-
-aws ec2 import-key-pair --key-name "my-key" --public-key-material fileb://~/.ssh/my-key.pub
-
-**Просмотр перечня пар ключей ec2 инстансов через AWS CLI на Ubuntu_20**
-
-aws ec2 describe-key-pairs 
-
-aws ec2 describe-key-pairs --key-name instance1_key_pair
-
-**Конфигурация Azure CLI на Ubuntu_20**
+**Размещение приватных данных при помощи Azure CLI на Ubuntu_20**
 
 az login
 
@@ -123,11 +99,7 @@ az group create --name "AWS_EC2" -l "swedencentral"
 
 az keyvault create --name "key-storage-1" --resource-group "AWS_EC2" --location "swedencentral"
 
-*Разместил в хранилище ключ linstance1_key_pair.pem*
-
-az keyvault key import --vault-name "key-storage-1" --pem-file "instance1_key_pair.pem" --name "aws-i-test"
-
-*Разместил привытные данные из new_user_credentials.csv для user1 в хранилище секретов.* 
+*Разместил приватные данные из new_user_credentials.csv для user1 в хранилище секретов.* 
 
 az keyvault secret set --vault-name "key-storage-1" --name "AWS-User1-Access-key-ID" --value "<Access key ID>"
 
@@ -135,15 +107,7 @@ az keyvault secret set --vault-name "key-storage-1" --name "AWS-User1-Secret-acc
 
 az keyvault secret set --vault-name "key-storage-1" --name "AWS-User1-Console-login-link" --value "<Console login link>"
 
-**Получение ключей RSA из Azure Key Vault на Ubuntu_20**
-
-az keyvault key show --vault-name "key-storage-1" --name "aws-i-0259666904af797ab"
-
-az keyvault key download --vault-name "key-storage-1" --name "aws-i-0259666904af797ab" --file mykey
-
 **Получение данных из Azure Key Vault на Ubuntu_20**
-
-az keyvault key show --vault-name "key-storage-1" --name "aws-i-0259666904af797ab"
 
 az keyvault secret show --vault-name "key-storage-1" --name "AWS-User1-Access-key-ID" --query "value"
 
@@ -154,6 +118,41 @@ az keyvault secret show --vault-name "key-storage-1" --name "AWS-User1-Console-l
 **Удаление группы ресурсов Azure на Ubuntu_20**
 
 az group delete --name "myResourceGroup"
+
+**Конфигурация AWS CLI на Ubuntu_20**
+
+aws configure
+
+AWS Access Key ID [None]:  `<Access key ID>`
+
+AWS Secret Access Key [None]: ` <Secret access key>`
+
+Default region name [None]: `eu-central-1`
+
+Default output format [None]: `json`
+
+**Создание пары ключей при помощи AWS CLI на Ubuntu_20**
+
+
+aws ec2 create-key-pair --key-name MyKeyPair
+
+**Создание пары ключей сторонним инструментом и импорт новой пары ключей для ec2 инстансов через AWS CLI на Ubuntu_20**
+
+ssh-keygen -t rsa -C "my-key" -f ./my-key
+
+aws ec2 import-key-pair --key-name "my-key" --public-key-material fileb://~/.ssh/my-key.pub
+
+**Просмотр перечня пар ключей ec2 инстансов через AWS CLI на Ubuntu_20**
+
+aws ec2 describe-key-pairs 
+
+aws ec2 describe-key-pairs --key-name instance1_key_pair
+
+**Удаление пар ключей ec2 инстансов через AWS CLI на Ubuntu_20**
+
+aws ec2 delete-key-pair --key-name MyKeyPair
+
+aws ec2 delete-key-pair --key-name my-key
 
 **Подключение к инстансу ami-0a49b025fffbbdac6 (64-bit x86) по SSH на на Ubuntu_20**
 
