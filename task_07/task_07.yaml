@@ -19,7 +19,7 @@ Metadata:
           default: "Subnets CIDR Blocks"
         Parameters:
           - PublicSubnetACIDR
-          - PublicSubnetBCIDR         
+          - PublicSubnetBCIDR
 
 Parameters:
   Environment:
@@ -41,6 +41,38 @@ Parameters:
     Description: "Public Subnet-B CIDR"
 
 Resources:
+
+# ============= Role ==================
+# IAM Role with Embedded Policy and Instance Profiles
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+  RootRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  RootInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref RootRole
+
 #============= VPC ==================
   VPC:
     Type: AWS::EC2::VPC
@@ -162,24 +194,25 @@ Resources:
           Value: !Join [ "", [ !Ref Environment, "-Public-B" ] ]
         - Key: kubernetes.io/role/elb
           Value: 1
+#=================== EC2 Instances ===========================
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html#cfn-ec2-instance-networkinterfaces
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-ec2.html
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]
+      KeyName: !Ref KeyName
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet:
+          - Ref: "myVPCEC2SecurityGroup"
+        SubnetId:
+          Ref: "PublicSubnet"
+      SecurityGroups:
+      - !Ref aws
 
-  # EC2Instance:
-    # Type: AWS::EC2::Instance
-    # Properties:
-      # ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]
-      # KeyName: !Ref KeyName
-      # InstanceType: !Ref InstanceType
-      # SecurityGroups:
-      # - !Ref Ec2SecurityGroup
-      # BlockDeviceMappings:
-      # -
-        # DeviceName: /dev/sda1
-        # Ebs:
-          # VolumeSize: 50
-      # -
-        # DeviceName: /dev/sdm
-        # Ebs:
-          # VolumeSize: 100
 
 #=================== OUTPUTS ===========================
 Outputs:
