@@ -18,7 +18,7 @@
 
 Создал шаблон task_07.yaml для выполнения требований задания на инфраструктуре AWS
 
-*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC и двух "Nat Gateway" для подсетей.* 
+*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC.* 
 
 **Установка ПО на Windows 10:**
 
@@ -64,9 +64,45 @@ Default region name [None]: `eu-central-1`
 
 Default output format [None]: `json`
 
-**Запусук шаблона task_07.yaml при помощий AWS CLI c Ubuntu_20**
+**Создание пары ключей RSA для EC2 инстансов при помощи AWS CLI c Ubuntu_20**
 
+aws ec2 create-key-pair --key-name my-new-key-pair
 
+aws ec2 create-key-pair --key-name my-new-key-pair --query "KeyMaterial" --output text > my-new-key-pair.pem
 
-**Остановка шаблона task_07.yaml при помощий AWS CLI c Ubuntu_20**
+chmod go-rwx my-new-key-pair.pem
+
+**Просмотр перечня пар ключей EC2 инстансов через AWS CLI на Ubuntu_20**
+
+aws ec2 describe-key-pairs 
+
+aws ec2 describe-key-pairs --key-name my-new-key-pair
+
+**Удаление пар ключей EC2 инстансов через AWS CLI на Ubuntu_20**
+
+aws ec2 delete-key-pair --key-name my-new-key-pair
+
+*Операции со стеком при помощи aws cli:*
+
+*https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cli.html*
+
+**Создание стека cloudformation из шаблона task_07.yaml при помощи AWS CLI c Ubuntu_20**
+
+aws cloudformation create-stack --stack-name test --template-body file://./test.yaml 
+
+**Получение описания стека при помощий AWS CLI c Ubuntu_20**
+
+aws cloudformation describe-stacks --stack-name test
+
+**Получение исходного текста шаблона стека при помощий AWS CLI c Ubuntu_20**
+
+aws cloudformation get-template --stack-name test
+
+**Обновление шаблона (внесение изменений в работающий стек)  при помощий AWS CLI c Ubuntu_20**
+
+aws cloudformation deploy --stack-name test --template ./test.yaml
+
+**Остановка и удаление работающего стека при помощий AWS CLI c Ubuntu_20**
+
+aws cloudformation delete-stack --stack-name test
 

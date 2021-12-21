@@ -1,0 +1,66 @@
+  - Amazon Masine Image (AMI): ami-099ccc441b2ef41ec
+  - Instance Type:
+    Family: t2
+    Type: t2.micro  
+    vCPUS: 1
+    Memory (GIB): 1
+    Instance storage: EBS only
+    EBS-Optimized Available: -
+    Network Performance: Low to Moderate
+    IPv6 Support: Yes
+  - Configure Instance Details:
+    Number of instances: 1
+    Purchasing option: no
+    Network: My-VPC
+    Subnet: ... | My-VPC-Public-A
+    Auto-assign Public IP: Use subnet setting (Eanable)
+    Hostname type: Use subnet setting (IP name)
+    DNS Hostname: Enable resource-based IPv4 (A record) DNS requests
+    Placement group: no
+    Capacity Reservation: Open
+    Domain join directory: No directory
+    IAM role: None
+    Shutdown behavior: stop
+    Stop - Hibernate behavior: no
+    Enable termination protection: no
+    Monitoring: no
+    Tenancy: Shared - Run a shared hardware instance
+    Credit specification: no
+    File systems: no
+  - Network interfaces:
+    Device: eth0
+    Network interface: New network interface
+    Subnet: ... | My-VPC-Public-A
+    Primary IP: Auto-assign
+    Secondary: Add IP
+    IPv6 IPs: The selected subnet does not support IPv6 because it does not have an IPv6 CIDR.
+  - Advanced Details:
+    Enclave: no
+    Metadata accessible: Enabled
+    Metadata version: V1 and V2 (token optional)
+    Metadata token response hop limit: 1
+    User data: As text
+  - Add storage:
+    Volume Type: Root
+    Device: /dev/xvda
+    Snapshot: snap-06463aac3cc44325c
+    Size(GiB): 8
+    Volume Type: General purpose SSD (gp2)
+    IOPS: 100 / 3000
+    Throughput (MB/s): N/A
+    Delete on Termination: yes
+    Encryption: Not Encrypte
+  Shared file systems: You currently don't have any file systems on this instance. Select "Add file system" button below to add a file system.
+  Add Tags: This resource currently has no tags
+  - Configure Security Group:
+    Assign a security group: Create a new security group
+    Security group name: launch-wizard-4
+    Description: launch-wizard-4 created 2021-12-21T09:10:45.968+03:00
+    Type: SSH
+    Protocol: TCP
+    Port range: 22
+    Source: Custom 0.0.0.0/0
+    Description:
+  - Select an existing key pair or create a new key pair:
+    Choose an existing key pair: yes
+    Select a key pair: Frankfurt-rsa-key-pair | RSA
