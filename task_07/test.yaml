@@ -20,6 +20,11 @@ Metadata:
         Parameters:
           - PublicSubnetACIDR
           - PublicSubnetBCIDR
+      -
+        Label:
+          default: "EC2 instances parameters"
+        Parameters:
+          - EC2Type
 
 Parameters:
   Environment:
@@ -40,6 +45,11 @@ Parameters:
     Default: '10.0.20.0/24'
     Description: "Public Subnet-B CIDR"
 
+  EC2Type:
+    Type: String
+    Default: 't2.micro'
+    Description: "Type of instance (InstanceType)"
+ 
 Resources:
 
 #============= VPC ==================
@@ -54,23 +64,35 @@ Resources:
           Value: !Ref Environment
 
 #=========== SecurityGroup ============
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-securitygroupegress
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group-ingress.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-security-group-egress.html
   InstanceSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+    Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Allow http to client host
-      VpcId:
-         Ref: !Ref VPC
+      GroupDescription: Base Security Group. Allow http to client host.
+      VpcId:         
+         Ref: VPC
       SecurityGroupIngress:
       - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
         FromPort: 80
         ToPort: 80
-        CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
       - IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
         FromPort: 80
         ToPort: 80
-        CidrIp: 0.0.0.0/0
-		  
+  InstanceSecurityGroupIngress:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      Description: Allows SSH protocol connection.
+      GroupId: !Ref InstanceSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+
 #====== Internet Gateway =======
   GatewayInternet:
     Type: "AWS::EC2::InternetGateway"
@@ -115,45 +137,6 @@ Resources:
       RouteTableId: !Ref RouteTableForPublicSubnet
       SubnetId: !Ref PublicSubnetB
 
-#=============================== EC2 instances ===================================
-  EC2InstanceA:
-    Type: AWS::EC2::Instance
-    Properties:      
-      #BlockDeviceMappings:
-      #  - BlockDeviceMapping      
-      DisableApiTermination: false
-      EbsOptimized: false
-      #ElasticGpuSpecifications:
-      #  - ElasticGpuSpecification
-      #IamInstanceProfile: String
-      ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]      
-      InstanceType: t2.micro
-      #Ipv6AddressCount: Integer
-      #Ipv6Addresses:
-        #- InstanceIpv6Address      
-      KeyName: !Ref Frankfurt-rsa-key-pair
-      #LaunchTemplate:
-        #LaunchTemplateSpecification
-      #LicenseSpecifications:
-        #- LicenseSpecification
-      #NetworkInterfaces:
-        #- NetworkInterface      
-      #PrivateIpAddress: String      
-      SecurityGroupIds:
-        - String
-      SecurityGroups:
-        - String
-      SourceDestCheck: Boolean
-      SsmAssociations:
-        - SsmAssociation
-      SubnetId: String
-      Tags:
-        - Tag
-      Tenancy: String
-      UserData: String
-      Volumes:
-        - Volume
-
 #=============================== ALL Subnets ===================================
   PublicSubnetA:
     Type: "AWS::EC2::Subnet"
@@ -181,6 +164,46 @@ Resources:
         - Key: kubernetes.io/role/elb
           Value: 1
 
+#=============================== EC2 instances ===================================
+  EC2InstanceA:
+    Type: AWS::EC2::Instance
+    Properties:
+      #BlockDeviceMappings:
+      #  - BlockDeviceMapping
+      DisableApiTermination: false
+      EbsOptimized: false
+      #ElasticGpuSpecifications:
+      #  - ElasticGpuSpecification
+      #IamInstanceProfile: String
+      #ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]
+      ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref "EC2Type", Arch ] ]
+      #ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, "EC2Type", Arch ] ]
+      #ImageId: ami-0a7559a0ef82639f2
+      #InstanceType: !Ref InstanceType
+      InstanceType: !Ref "EC2Type"
+      #InstanceType: "EC2Type"
+      #InstanceType: t2.micro
+      #Ipv6AddressCount: Integer
+      #Ipv6Addresses:
+        #- InstanceIpv6Address
+      KeyName: Frankfurt-rsa-key-pair
+      #LaunchTemplate:
+        #LaunchTemplateSpecification
+      #LicenseSpecifications:
+        #- LicenseSpecification
+      #NetworkInterfaces:
+        #- NetworkInterface
+      #PrivateIpAddress: String
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup        
+      SourceDestCheck: true
+      SubnetId: !Ref PublicSubnetA     
+      #Tags:
+        #- Tag
+      Tenancy: default
+      UserData: "echo 123asdf > testfile.txt"
+      #Volumes:
+        #- Volume
 #=================== OUTPUTS ===========================
 Outputs:
   VPC:

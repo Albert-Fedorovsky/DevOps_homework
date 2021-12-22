@@ -82,6 +82,18 @@ aws ec2 describe-key-pairs --key-name my-new-key-pair
 
 aws ec2 delete-key-pair --key-name my-new-key-pair
 
+
+
+*Описание работы с шаблонами  cloudformation*
+
+*https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html*
+
+**Проверка шаблонов cloudformation при помощий AWS CLI c Ubuntu_20**
+
+aws cloudformation validate-template --template-body file://./test.yaml
+
+
+
 *Операции со стеком при помощи aws cli:*
 
 *https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cli.html*
@@ -105,4 +117,6 @@ aws cloudformation deploy --stack-name test --template ./test.yaml
 **Остановка и удаление работающего стека при помощий AWS CLI c Ubuntu_20**
 
 aws cloudformation delete-stack --stack-name test
+
+
 
