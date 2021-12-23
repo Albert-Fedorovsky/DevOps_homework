@@ -82,6 +82,18 @@ aws ec2 describe-key-pairs --key-name my-new-key-pair
 
 aws ec2 delete-key-pair --key-name my-new-key-pair
 
+**Подключение к Ubuntu Server 20.04 LTS (HVM) инстансу по SSH на Ubuntu_20**
+
+chmod go-rwx ./instance_key_pair.pem
+
+ssh -i ./instance_key_pair.pem ubuntu@<instance public IP>
+
+**Подключение к Amazon Linux 2 AMI (HVM) инстансу по SSH на Ubuntu_20**
+
+chmod go-rwx ./instance_key_pair.pem
+
+ssh -i ./instance_key_pair.pem ec2-user@<instance public IP>
+
 
 
 *Описание работы с шаблонами  cloudformation*

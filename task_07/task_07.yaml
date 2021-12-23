@@ -20,6 +20,12 @@ Metadata:
         Parameters:
           - PublicSubnetACIDR
           - PublicSubnetBCIDR
+      -
+        Label:
+          default: "EC2 instances parameters"
+        Parameters:
+          - EC2AMI
+          - EC2Type
 
 Parameters:
   Environment:
@@ -40,38 +46,17 @@ Parameters:
     Default: '10.0.20.0/24'
     Description: "Public Subnet-B CIDR"
 
-Resources:
+  EC2AMI:
+    Type: String
+    Default: 'ami-05d34d340fb1d89e5'
+    Description: "Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type (64-bit x86)"
 
-# ============= Role ==================
-# IAM Role with Embedded Policy and Instance Profiles
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
-  RootRole:
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Path: /
-      Policies:
-        - PolicyName: root
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action: '*'
-                Resource: '*'
-  RootInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Path: /
-      Roles:
-        - !Ref RootRole
+  EC2Type:
+    Type: String
+    Default: 't2.micro'
+    Description: "Type of instance (InstanceType)"
+
+Resources:
 
 #============= VPC ==================
   VPC:
@@ -83,6 +68,56 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref Environment
+
+#=========== SecurityGroup ============
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-securitygroupegress
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group-ingress.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-security-group-egress.html
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Allow http connections.
+      VpcId:
+         Ref: VPC
+      SecurityGroupIngress:
+      - Description: Allow incoming http connections.
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        FromPort: 80
+        ToPort: 80
+      SecurityGroupEgress:
+      - Description: Allow outcoming http connections.
+        IpProtocol: tcp
+        CidrIp: 0.0.0.0/0
+        FromPort: 80
+        ToPort: 80
+  IntboundRule1:
+    Type: 'AWS::EC2::SecurityGroupIngress'
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allow incoming SSH connections.
+      FromPort: 22
+      GroupId: !Ref InstanceSecurityGroup
+      IpProtocol: tcp
+      ToPort: 22
+  # IntboundRule2:
+    # Type: 'AWS::EC2::SecurityGroupIngress'
+    # Properties:
+      # CidrIp: 0.0.0.0/0
+      # Description: Allow incoming ping from any hosts.
+      # FromPort: -1
+      # GroupId: !Ref InstanceSecurityGroup
+      # IpProtocol: icmp
+      # ToPort: -1
+  OutboundRule1:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allows outcoming ping to any hosts.
+      GroupId: !Ref InstanceSecurityGroup
+      FromPort: -1
+      IpProtocol: icmp
+      ToPort: -1
 
 #====== Internet Gateway =======
   GatewayInternet:
@@ -128,46 +163,6 @@ Resources:
       RouteTableId: !Ref RouteTableForPublicSubnet
       SubnetId: !Ref PublicSubnetB
 
- #======= ElasticIP for NAT Gateways ======
-  EIP1:
-    Type: "AWS::EC2::EIP"
-    DependsOn : GatewayAttachmentInternet
-    Properties:
-      Domain: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: EIP-NATGateway-A
-
-  EIP2:
-    Type: "AWS::EC2::EIP"
-    DependsOn : GatewayAttachmentInternet
-    Properties:
-      Domain: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: EIP-NATGateway-B
-
-#========= NAT Gateways ===============
-  NATGatewayA:
-    DependsOn: GatewayAttachmentInternet
-    Type: AWS::EC2::NatGateway
-    Properties:
-      SubnetId: !Ref PublicSubnetA
-      AllocationId:  !GetAtt EIP1.AllocationId
-      Tags:
-        - Key: Name
-          Value: NATGateway-A
-
-  NATGatewayB:
-    DependsOn: GatewayAttachmentInternet
-    Type: AWS::EC2::NatGateway
-    Properties:
-      SubnetId: !Ref PublicSubnetB
-      AllocationId:  !GetAtt EIP2.AllocationId
-      Tags:
-        - Key: Name
-          Value: NATGateway-B
-
 #=============================== ALL Subnets ===================================
   PublicSubnetA:
     Type: "AWS::EC2::Subnet"
@@ -194,25 +189,20 @@ Resources:
           Value: !Join [ "", [ !Ref Environment, "-Public-B" ] ]
         - Key: kubernetes.io/role/elb
           Value: 1
-#=================== EC2 Instances ===========================
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html#cfn-ec2-instance-networkinterfaces
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-ec2.html
-  EC2Instance:
+
+#=============================== EC2 instances ===================================
+  Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]
-      KeyName: !Ref KeyName
-      InstanceType: !Ref InstanceType
+      ImageId: !Ref EC2AMI
+      InstanceType: !Ref EC2Type
+      KeyName: Frankfurt-rsa-key-pair
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-        DeviceIndex: "0"
-        GroupSet:
-          - Ref: "myVPCEC2SecurityGroup"
-        SubnetId:
-          Ref: "PublicSubnet"
-      SecurityGroups:
-      - !Ref aws
-
+        - DeviceIndex: "0"
+          GroupSet:
+            - Ref: InstanceSecurityGroup
+          SubnetId:
+            Ref: PublicSubnetA
 
 #=================== OUTPUTS ===========================
 Outputs:

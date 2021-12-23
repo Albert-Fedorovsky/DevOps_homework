@@ -24,6 +24,7 @@ Metadata:
         Label:
           default: "EC2 instances parameters"
         Parameters:
+          - EC2AMI
           - EC2Type
 
 Parameters:
@@ -45,11 +46,16 @@ Parameters:
     Default: '10.0.20.0/24'
     Description: "Public Subnet-B CIDR"
 
+  EC2AMI:
+    Type: String
+    Default: 'ami-05d34d340fb1d89e5'
+    Description: "Amazon Linux 2 AMI (HVM) - Kernel 5.10, SSD Volume Type (64-bit x86)"
+
   EC2Type:
     Type: String
     Default: 't2.micro'
     Description: "Type of instance (InstanceType)"
- 
+
 Resources:
 
 #============= VPC ==================
@@ -70,28 +76,48 @@ Resources:
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Base Security Group. Allow http to client host.
-      VpcId:         
+      GroupDescription: Allow http connections.
+      VpcId:
          Ref: VPC
       SecurityGroupIngress:
-      - IpProtocol: tcp
+      - Description: Allow incoming http connections.
+        IpProtocol: tcp
         CidrIp: 0.0.0.0/0
         FromPort: 80
         ToPort: 80
       SecurityGroupEgress:
-      - IpProtocol: tcp
+      - Description: Allow outcoming http connections.
+        IpProtocol: tcp
         CidrIp: 0.0.0.0/0
         FromPort: 80
         ToPort: 80
-  InstanceSecurityGroupIngress:
+  IntboundRule1:
     Type: 'AWS::EC2::SecurityGroupIngress'
     Properties:
-      Description: Allows SSH protocol connection.
+      CidrIp: 0.0.0.0/0
+      Description: Allow incoming SSH connections.
+      FromPort: 22
       GroupId: !Ref InstanceSecurityGroup
       IpProtocol: tcp
-      FromPort: 22
       ToPort: 22
-      SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+  # IntboundRule2:
+    # Type: 'AWS::EC2::SecurityGroupIngress'
+    # Properties:
+      # CidrIp: 0.0.0.0/0
+      # Description: Allow incoming ping from any hosts.
+      # FromPort: -1
+      # GroupId: !Ref InstanceSecurityGroup
+      # IpProtocol: icmp
+      # ToPort: -1
+  OutboundRule1:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allows outcoming ping to any hosts.
+      GroupId: !Ref InstanceSecurityGroup
+      FromPort: -1
+      IpProtocol: icmp
+      ToPort: -1
 
 #====== Internet Gateway =======
   GatewayInternet:
@@ -165,45 +191,19 @@ Resources:
           Value: 1
 
 #=============================== EC2 instances ===================================
-  EC2InstanceA:
+  Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
-      #BlockDeviceMappings:
-      #  - BlockDeviceMapping
-      DisableApiTermination: false
-      EbsOptimized: false
-      #ElasticGpuSpecifications:
-      #  - ElasticGpuSpecification
-      #IamInstanceProfile: String
-      #ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref InstanceType, Arch ] ]
-      ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, !Ref "EC2Type", Arch ] ]
-      #ImageId: !FindInMap [ AWSRegionArch2AMI, !Ref 'AWS::Region' , !FindInMap [ AWSInstanceType2Arch, "EC2Type", Arch ] ]
-      #ImageId: ami-0a7559a0ef82639f2
-      #InstanceType: !Ref InstanceType
-      InstanceType: !Ref "EC2Type"
-      #InstanceType: "EC2Type"
-      #InstanceType: t2.micro
-      #Ipv6AddressCount: Integer
-      #Ipv6Addresses:
-        #- InstanceIpv6Address
+      ImageId: !Ref EC2AMI
+      InstanceType: !Ref EC2Type
       KeyName: Frankfurt-rsa-key-pair
-      #LaunchTemplate:
-        #LaunchTemplateSpecification
-      #LicenseSpecifications:
-        #- LicenseSpecification
-      #NetworkInterfaces:
-        #- NetworkInterface
-      #PrivateIpAddress: String
-      SecurityGroupIds:
-        - !Ref InstanceSecurityGroup        
-      SourceDestCheck: true
-      SubnetId: !Ref PublicSubnetA     
-      #Tags:
-        #- Tag
-      Tenancy: default
-      UserData: "echo 123asdf > testfile.txt"
-      #Volumes:
-        #- Volume
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          GroupSet:
+            - Ref: InstanceSecurityGroup
+          SubnetId:
+            Ref: PublicSubnetA
+
 #=================== OUTPUTS ===========================
 Outputs:
   VPC:
