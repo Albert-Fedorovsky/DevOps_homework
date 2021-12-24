@@ -94,6 +94,10 @@ chmod go-rwx ./instance_key_pair.pem
 
 ssh -i ./instance_key_pair.pem ec2-user@<instance public IP>
 
+**Копирование файлов в папку пользователя по умолчанию на Amazon Linux 2 AMI (HVM) инстанс по SSH на Ubuntu_20**
+
+scp -i ./instance_key_pair.pem ./file.txt ec2-user@<instance public IP>:/home/ec2-user/
+
 
 
 *Описание работы с шаблонами  cloudformation*
@@ -129,6 +133,38 @@ aws cloudformation deploy --stack-name test --template ./test.yaml
 **Остановка и удаление работающего стека при помощий AWS CLI c Ubuntu_20**
 
 aws cloudformation delete-stack --stack-name test
+
+
+
+**Получение информации по запущенным EC2 инстансам при помощий AWS CLI c Ubuntu_20**
+
+*https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-instances.html*
+
+aws ec2 describe-instances 
+
+aws ec2 describe-instances  --filters Name=instance-type,Values=t2.micro | grep PublicIpAddress
+
+
+
+**Конфигурация NGINX на EC2 инстансе**
+
+*https://codex.so/devops-basics*
+
+sudo nano /etc/nginx/nginx.conf
+
+В файле /etc/nginx/nginx.conf: 
+
+listen 80 — какой порт будет «слушать» сервер
+
+server_name yourdomain.com — доменное имя сервера
+
+root /usr/share/nginx/html — директория, в которой будут лежать файлы проекта
+
+sudo systemctl status nginx
+
+sudo systemctl start nginx
+
+sudo systemctl enable nginx
 
 
 

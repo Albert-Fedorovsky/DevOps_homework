@@ -1,9 +1,9 @@
 # --------------------------------------------------------------------------------------------------
-# CloudFormation Network Layer: VPC, Subnets + RouteTables, Internet + NAT Gateways
+# CloudFormation Network Layer: VPC, Subnets + RouteTables, Internet + NAT Gateway
 # Author: Albert Fedorovsky
 # --------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Network: VPC, Subnets + RouteTables, Internet + NAT Gateways"
+Description: "Network: VPC, Subnets + RouteTables, Internet + NAT Gateway"
 
 Metadata:
  AWS::CloudFormation::Interface:
@@ -118,6 +118,15 @@ Resources:
       FromPort: -1
       IpProtocol: icmp
       ToPort: -1
+  OutboundRule2:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allows any outcoming traffic.
+      GroupId: !Ref InstanceSecurityGroup
+      FromPort: -1
+      IpProtocol: -1
+      ToPort: -1
 
 #====== Internet Gateway =======
   GatewayInternet:
@@ -191,6 +200,10 @@ Resources:
           Value: 1
 
 #=============================== EC2 instances ===================================
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-network-iface-embedded.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-base64.html
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -203,6 +216,27 @@ Resources:
             - Ref: InstanceSecurityGroup
           SubnetId:
             Ref: PublicSubnetA
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            echo ${AWS::StackName} > /home/ec2-user/StackName.txt
+            yum update -y
+            amazon-linux-extras list | grep nginx
+            amazon-linux-extras enable nginx1
+            yum clean metadata
+            yum -y install nginx
+            nginx -v
+            echo "<!DOCTYPE html><html><head><META HTTP-EQUIV="Content-Type"CONTENT="text/html;charset=UTF8"><title>Andersen DevOps cource: task_07</title><style type= "text/css"></style> </head><script type= "text/javascript" language="JavaScript"> </script><body><h1>task_07</h1>This is the first EC2 instance deployed to connect to a load balancer.</body></html>" > /usr/share/nginx/html/index.html
+            systemctl status nginx
+            systemctl start nginx
+            systemctl enable nginx            
+
+#================= Load balancer =======================
+#https://aws.amazon.com/ru/elasticloadbalancing/
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-elb.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-elb.html
+
 
 #=================== OUTPUTS ===========================
 Outputs:

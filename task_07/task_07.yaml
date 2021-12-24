@@ -1,9 +1,9 @@
 # --------------------------------------------------------------------------------------------------
-# CloudFormation Network Layer: VPC, Subnets + RouteTables, Internet + NAT Gateways
+# CloudFormation Network Layer: VPC, Subnets + RouteTables, Internet + NAT Gateway
 # Author: Albert Fedorovsky
 # --------------------------------------------------------------------------------------------------
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Network: VPC, Subnets + RouteTables, Internet + NAT Gateways"
+Description: "Network: VPC, Subnets + RouteTables, Internet + NAT Gateway"
 
 Metadata:
  AWS::CloudFormation::Interface:
@@ -191,6 +191,10 @@ Resources:
           Value: 1
 
 #=============================== EC2 instances ===================================
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-network-iface-embedded.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-base64.html
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -203,6 +207,18 @@ Resources:
             - Ref: InstanceSecurityGroup
           SubnetId:
             Ref: PublicSubnetA
+      UserData:
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash -xe
+          yum update -y aws-cfn-bootstrap
+          echo 123abcd ${AWS::StackName} > /test.txt
+
+#================= Load balancer =======================
+#https://aws.amazon.com/ru/elasticloadbalancing/
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-elb.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-elb.html
+
 
 #=================== OUTPUTS ===========================
 Outputs:
