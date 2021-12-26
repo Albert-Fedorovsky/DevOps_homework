@@ -1,7 +1,17 @@
-# --------------------------------------------------------------------------------------------------
-# CloudFormation Network Layer: VPC, Subnets + RouteTables, Internet + NAT Gateway
+#-------------------------------------------------------------------------------
+# AWS CloudFormation template
 # Author: Albert Fedorovsky
-# --------------------------------------------------------------------------------------------------
+# Resouces:
+#   Network Layer:
+#     - VPC - 1 item
+#     - Internet Gateway - 1 item
+#     - Subnets - 2 items
+#     - RouteTables - 1 item
+#   Resouces:
+#     - EC2 instances - 2 items
+#     - Application loadbalancer - 1 item
+#-------------------------------------------------------------------------------
+
 AWSTemplateFormatVersion: 2010-09-09
 Description: "Network: VPC, Subnets + RouteTables, Internet + NAT Gateway"
 
@@ -26,6 +36,7 @@ Metadata:
         Parameters:
           - EC2AMI
           - EC2Type
+          - S3BucketReference
 
 Parameters:
   Environment:
@@ -55,10 +66,15 @@ Parameters:
     Type: String
     Default: 't2.micro'
     Description: "Type of instance (InstanceType)"
+  
+  S3BucketReference:
+    Type: String
+    Default: 't2.micro'
+    Description: "Link to S3 storing index.html"
 
 Resources:
 
-#============= VPC ==================
+#===================================== VPC =====================================
   VPC:
     Type: AWS::EC2::VPC
     Properties: # Attach Primary CIDR Block
@@ -69,7 +85,7 @@ Resources:
         - Key: Name
           Value: !Ref Environment
 
-#=========== SecurityGroup ============
+#================================= SecurityGroup ===============================
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-securitygroupegress
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group-ingress.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-security-group-egress.html
@@ -118,8 +134,17 @@ Resources:
       FromPort: -1
       IpProtocol: icmp
       ToPort: -1
+  OutboundRule2:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      CidrIp: 0.0.0.0/0
+      Description: Allows any outcoming connections.
+      GroupId: !Ref InstanceSecurityGroup
+      FromPort: -1
+      IpProtocol: -1
+      ToPort: -1
 
-#====== Internet Gateway =======
+#============================== Internet Gateway ===============================
   GatewayInternet:
     Type: "AWS::EC2::InternetGateway"
     Properties:
@@ -133,7 +158,7 @@ Resources:
       VpcId:  !Ref VPC
       InternetGatewayId: !Ref GatewayInternet
 
-#====== Public RouteTables =========
+#============================= Public RouteTables ==============================
   RouteTableForPublicSubnet: # Creation of Empty Route Table
     Type: "AWS::EC2::RouteTable"
     Properties:
@@ -150,7 +175,7 @@ Resources:
       GatewayId: !Ref GatewayInternet
       RouteTableId: !Ref RouteTableForPublicSubnet
 
-#====== Associate Public Route for Public Subnets
+#================= Associate Public Route for Public Subnets ===================
   RouteAssociationPublicA:
     Type: "AWS::EC2::SubnetRouteTableAssociation"
     Properties:
@@ -190,14 +215,85 @@ Resources:
         - Key: kubernetes.io/role/elb
           Value: 1
 
-#=============================== EC2 instances ===================================
+#===================== S3 bucket for website hosting ===========================
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-s3.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-s3-bucket.html#cfn-s3-bucket-accesscontrol
+#https://aws.amazon.com/ru/premiumsupport/knowledge-center/ec2-instance-access-s3-bucket/
+#https://docs.aws.amazon.com/efs/latest/ug/wt1-test.html
+#https://devacademy.ru/article/razbiraemsya-v-http-proksi-nginx-balansirovke-nagruzki-buferizatsii-i-keshirovanii/
+  # S3Bucket:
+    # Type: AWS::S3::Bucket
+    # Properties:
+      # AccessControl: PublicRead
+      # WebsiteConfiguration:
+        # IndexDocument: index.html
+        # ErrorDocument: error.html
+    # DeletionPolicy: Retain
+  # BucketPolicy:
+    # Type: AWS::S3::BucketPolicy
+    # Properties:
+      # PolicyDocument:
+        # Id: MyPolicy
+        # Version: 2012-10-17
+        # Statement:
+          # - Sid: PublicReadForGetBucketObjects
+            # Effect: Allow
+            # Principal: '*'
+            # Action: 's3:GetObject'
+            # Resource: !Join 
+              # - ''
+              # - - 'arn:aws:s3:::'
+                # - !Ref S3Bucket
+                # - /*
+      # Bucket: !Ref S3Bucket
+
+# ================================ IAM Role ====================================
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
+# https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements.html
+# https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-with-s3-actions.html
+  RootRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+# =========================== IAM InstanceProfile ==============================
+  RootInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref RootRole
+
+#=============================== EC2 instances =================================
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-instance.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-network-iface-embedded.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-sub.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-base64.html
+#https://coderoad.ru/57784287/%D0%9A%D0%B0%D0%BA-%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C-NGINX-%D0%BD%D0%B0-AWS-EC2-Linux-2
+#https://tecadmin.net/mount-s3-bucket-centosrhel-ubuntu-using-s3fs/
+#aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
+
   Ec2Instance:
     Type: AWS::EC2::Instance
     Properties:
+      IamInstanceProfile: !Ref RootInstanceProfile
       ImageId: !Ref EC2AMI
       InstanceType: !Ref EC2Type
       KeyName: Frankfurt-rsa-key-pair
@@ -210,17 +306,24 @@ Resources:
       UserData:
         Fn::Base64:
           !Sub |
-          #!/bin/bash -xe
-          yum update -y aws-cfn-bootstrap
-          echo 123abcd ${AWS::StackName} > /test.txt
+            #!/bin/bash -xe
+            echo ${AWS::StackName} > /home/ec2-user/StackName.txt
+            yum update -y
+            amazon-linux-extras list | grep nginx
+            amazon-linux-extras enable nginx1
+            yum clean metadata
+            yum -y install nginx
+            nginx -v
+            echo -E '<!DOCTYPE html><html><head><META HTTP-EQUIV="Content-Type"CONTENT="text/html;charset=UTF8"><title>Andersen DevOps cource: task_07</title><style type= "text/css"></style> </head><script type= "text/javascript" language="JavaScript"> </script><body><h1>task_07</h1>This is the first (script) EC2 instance deployed to connect to a load balancer.</body></html>' > /usr/share/nginx/html/index.html            
+            systemctl enable nginx.service
+            systemctl start nginx.service
 
-#================= Load balancer =======================
+#=============================== Load balancer =================================
 #https://aws.amazon.com/ru/elasticloadbalancing/
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-elb.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-elb.html
 
-
-#=================== OUTPUTS ===========================
+#================================== OUTPUTS ====================================
 Outputs:
   VPC:
     Description: ID for the VPC
@@ -245,3 +348,17 @@ Outputs:
     Value: !Ref PublicSubnetB
     Export:
       Name: !Join [ "-", [ !Ref "Environment", "PublicSubnetB" ] ]
+
+  # WebsiteURL:
+    # Value: !GetAtt 
+      # - S3Bucket
+      # - WebsiteURL
+    # Description: URL for website hosted on S3
+  # S3BucketSecureURL:
+    # Value: !Join 
+      # - ''
+      # - - 'https://'
+        # - !GetAtt 
+          # - S3Bucket
+          # - DomainName
+    # Description: Name of S3 bucket to hold website content

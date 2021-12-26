@@ -1,4 +1,4 @@
-# task_07
+# task-07
 
 #### Работы по седьмому заданию:
 
@@ -16,7 +16,7 @@
 
 - создал role: Cloudformation_admin с политикой AdministratorAccess для управления инфраструктурой при помощи шаблонов сервиса clouformation
 
-Создал шаблон task_07.yaml для выполнения требований задания на инфраструктуре AWS
+Создал шаблон task-07.yaml для выполнения требований задания на инфраструктуре AWS
 
 *Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC.* 
 
@@ -82,6 +82,26 @@ aws ec2 describe-key-pairs --key-name my-new-key-pair
 
 aws ec2 delete-key-pair --key-name my-new-key-pair
 
+**Создание S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+https://docs.aws.amazon.com/cli/latest/reference/s3/
+
+aws s3 mb s3://task-07
+
+**Загрузка файла index.html на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+
+aws s3 cp index.html s3://task-07/index.html
+
+
+**Получение файла index.html из S3 bucket с именем task-07 AWS CLI на Amazon Linux 2 AMI** 
+
+aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
+
+**Получение перечня запущенных S3 buckets при помощий AWS CLI c Ubuntu_20**
+
+aws s3 ls
+
 **Подключение к Ubuntu Server 20.04 LTS (HVM) инстансу по SSH на Ubuntu_20**
 
 chmod go-rwx ./instance_key_pair.pem
@@ -98,43 +118,37 @@ ssh -i ./instance_key_pair.pem ec2-user@<instance public IP>
 
 scp -i ./instance_key_pair.pem ./file.txt ec2-user@<instance public IP>:/home/ec2-user/
 
-
+**Проверка шаблонов cloudformation при помощий AWS CLI c Ubuntu_20**
 
 *Описание работы с шаблонами  cloudformation*
 
 *https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html*
 
-**Проверка шаблонов cloudformation при помощий AWS CLI c Ubuntu_20**
+aws cloudformation validate-template --template-body file://./task-07.yaml
 
-aws cloudformation validate-template --template-body file://./test.yaml
-
-
+**Создание стека cloudformation из шаблона task-07.yaml при помощи AWS CLI c Ubuntu_20**
 
 *Операции со стеком при помощи aws cli:*
 
 *https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-using-cli.html*
 
-**Создание стека cloudformation из шаблона task_07.yaml при помощи AWS CLI c Ubuntu_20**
-
-aws cloudformation create-stack --stack-name test --template-body file://./test.yaml 
+aws cloudformation create-stack --stack-name task-07 --template-body file://./task-07.yaml --capabilities CAPABILITY_IAM
 
 **Получение описания стека при помощий AWS CLI c Ubuntu_20**
 
-aws cloudformation describe-stacks --stack-name test
+aws cloudformation describe-stacks --stack-name task-07
 
 **Получение исходного текста шаблона стека при помощий AWS CLI c Ubuntu_20**
 
-aws cloudformation get-template --stack-name test
+aws cloudformation get-template --stack-name task-07
 
 **Обновление шаблона (внесение изменений в работающий стек)  при помощий AWS CLI c Ubuntu_20**
 
-aws cloudformation deploy --stack-name test --template ./test.yaml
+aws cloudformation deploy --stack-name test --template ./task-07.yaml
 
 **Остановка и удаление работающего стека при помощий AWS CLI c Ubuntu_20**
 
-aws cloudformation delete-stack --stack-name test
-
-
+aws cloudformation delete-stack --stack-name task-07
 
 **Получение информации по запущенным EC2 инстансам при помощий AWS CLI c Ubuntu_20**
 
@@ -143,8 +157,6 @@ aws cloudformation delete-stack --stack-name test
 aws ec2 describe-instances 
 
 aws ec2 describe-instances  --filters Name=instance-type,Values=t2.micro | grep PublicIpAddress
-
-
 
 **Конфигурация NGINX на EC2 инстансе**
 
@@ -160,11 +172,8 @@ server_name yourdomain.com — доменное имя сервера
 
 root /usr/share/nginx/html — директория, в которой будут лежать файлы проекта
 
-sudo systemctl status nginx
+sudo systemctl enable nginx.service
 
-sudo systemctl start nginx
+sudo systemctl start nginx.service
 
-sudo systemctl enable nginx
-
-
-
+sudo systemctl status nginx.service
