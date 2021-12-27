@@ -18,7 +18,7 @@
 
 Создал шаблон task-07.yaml для выполнения требований задания на инфраструктуре AWS
 
-*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC.* 
+*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC и групп безопастности.* 
 
 **Установка ПО на Windows 10:**
 
@@ -84,9 +84,17 @@ aws ec2 delete-key-pair --key-name my-new-key-pair
 
 **Создание S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
-https://docs.aws.amazon.com/cli/latest/reference/s3/
+*https://docs.aws.amazon.com/cli/latest/reference/s3/*
 
 aws s3 mb s3://task-07
+
+**Управление доступом (ACL) S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+*https://docs.aws.amazon.com/cli/latest/reference/s3api/*
+
+*https://docs.aws.amazon.com/cli/latest/reference/s3api/put-bucket-acl.html*
+
+aws s3api put-bucket-acl --bucket task-07 --grant-read uri=http://acs.amazonaws.com/groups/global/AllUsers
 
 **Загрузка файла index.html на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
@@ -101,6 +109,14 @@ aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
 **Получение перечня запущенных S3 buckets при помощий AWS CLI c Ubuntu_20**
 
 aws s3 ls
+
+**Удаление файла index.html на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+aws s3 rm s3://task-07/index.html
+
+**Удаление S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+aws s3 rb s3://task-07
 
 **Подключение к Ubuntu Server 20.04 LTS (HVM) инстансу по SSH на Ubuntu_20**
 
@@ -144,7 +160,7 @@ aws cloudformation get-template --stack-name task-07
 
 **Обновление шаблона (внесение изменений в работающий стек)  при помощий AWS CLI c Ubuntu_20**
 
-aws cloudformation deploy --stack-name test --template ./task-07.yaml
+aws cloudformation deploy --stack-name task-07 --template ./task-07.yaml --capabilities CAPABILITY_IAM
 
 **Остановка и удаление работающего стека при помощий AWS CLI c Ubuntu_20**
 

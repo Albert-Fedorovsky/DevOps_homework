@@ -66,7 +66,7 @@ Parameters:
     Type: String
     Default: 't2.micro'
     Description: "Type of instance (InstanceType)"
-  
+
   S3BucketReference:
     Type: String
     Default: 't2.micro'
@@ -240,7 +240,7 @@ Resources:
             # Effect: Allow
             # Principal: '*'
             # Action: 's3:GetObject'
-            # Resource: !Join 
+            # Resource: !Join
               # - ''
               # - - 'arn:aws:s3:::'
                 # - !Ref S3Bucket
@@ -288,9 +288,8 @@ Resources:
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-base64.html
 #https://coderoad.ru/57784287/%D0%9A%D0%B0%D0%BA-%D1%83%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%82%D1%8C-NGINX-%D0%BD%D0%B0-AWS-EC2-Linux-2
 #https://tecadmin.net/mount-s3-bucket-centosrhel-ubuntu-using-s3fs/
-#aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
 
-  Ec2Instance:
+  Ec2Instance1:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref RootInstanceProfile
@@ -314,14 +313,274 @@ Resources:
             yum clean metadata
             yum -y install nginx
             nginx -v
-            echo -E '<!DOCTYPE html><html><head><META HTTP-EQUIV="Content-Type"CONTENT="text/html;charset=UTF8"><title>Andersen DevOps cource: task_07</title><style type= "text/css"></style> </head><script type= "text/javascript" language="JavaScript"> </script><body><h1>task_07</h1>This is the first (script) EC2 instance deployed to connect to a load balancer.</body></html>' > /usr/share/nginx/html/index.html            
+            echo -E '<!DOCTYPE html><html><head><META HTTP-EQUIV="Content-Type"CONTENT="text/html;charset=UTF8"><title>Andersen DevOps cource: task_07</title><style type= "text/css"></style> </head><script type= "text/javascript" language="JavaScript"> </script><body><h1>task_07</h1>This is the first (script) EC2 instance deployed to connect to a load balancer.</body></html>' > /usr/share/nginx/html/index.html
             systemctl enable nginx.service
             systemctl start nginx.service
+            aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
+
+  Ec2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref RootInstanceProfile
+      ImageId: !Ref EC2AMI
+      InstanceType: !Ref EC2Type
+      KeyName: Frankfurt-rsa-key-pair
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          GroupSet:
+            - Ref: InstanceSecurityGroup
+          SubnetId:
+            Ref: PublicSubnetB
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            echo ${AWS::StackName} > /home/ec2-user/StackName.txt
+            yum update -y
+            amazon-linux-extras list | grep nginx
+            amazon-linux-extras enable nginx1
+            yum clean metadata
+            yum -y install nginx
+            nginx -v
+            echo -E '<!DOCTYPE html><html><head><META HTTP-EQUIV="Content-Type"CONTENT="text/html;charset=UTF8"><title>Andersen DevOps cource: task_07</title><style type= "text/css"></style> </head><script type= "text/javascript" language="JavaScript"> </script><body><h1>task_07</h1>This is the second (script) EC2 instance deployed to connect to a load balancer.</body></html>' > /usr/share/nginx/html/index.html
+            systemctl enable nginx.service
+            systemctl start nginx.service
+            aws s3 cp s3://task-07/index2.html /usr/share/nginx/html/index.html
 
 #=============================== Load balancer =================================
 #https://aws.amazon.com/ru/elasticloadbalancing/
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-elb.html
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-elb.html
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listener.html
+#https://computingforgeeks.com/configure-aws-application-load-balancer-with-cloudformation/
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-elasticloadbalancingv2-listenerrule.html
+  # MyLoadBalancer:
+    # Type: AWS::ElasticLoadBalancing::LoadBalancer
+    # DependsOn: GatewayAttachmentInternet
+    # Properties:
+      # Subnets:
+      # - Ref: PublicSubnetA
+      # - Ref: PublicSubnetB
+      # Instances:
+      # - Ref: Ec2Instance1
+      # - Ref: Ec2Instance2
+      # SecurityGroups:
+        # - Ref: InstanceSecurityGroup
+      # Listeners:
+      # - LoadBalancerPort: '80'
+        # InstancePort: '80'
+        # Protocol: HTTP
+      # HealthCheck:
+        # Target: HTTP:80/
+        # HealthyThreshold: '2'
+        # UnhealthyThreshold: '3'
+        # Interval: '15'
+        # Timeout: '4'
+
+  ALBSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for ALB"
+      GroupName: "test-ALB-SG"
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        -
+          CidrIp: "0.0.0.0/0"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        # -
+          # CidrIp: "0.0.0.0/0"
+          # FromPort: 443
+          # IpProtocol: "tcp"
+          # ToPort: 443
+
+  ApplicationLoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Name: "Application-Load-Balancer"
+      Scheme: "internet-facing"
+      Type: "application"
+      Subnets:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      # IpAddressType: "ipv4"
+      # LoadBalancerAttributes:
+        # -
+          # Key: "access_logs.s3.enabled"
+          # Value: "false"
+        # -
+          # Key: "idle_timeout.timeout_seconds"
+          # Value: "60"
+        # -
+          # Key: "deletion_protection.enabled"
+          # Value: "false"
+        # -
+          # Key: "routing.http2.enabled"
+          # Value: "true"
+        # -
+          # Key: "routing.http.drop_invalid_header_fields.enabled"
+          # Value: "false"
+
+  TargetGroup1:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      # HealthCheckIntervalSeconds: 30
+      # HealthCheckPath: "/"
+      Port: 80
+      Protocol: "HTTP"
+      # HealthCheckPort: "traffic-port"
+      # HealthCheckProtocol: "HTTP"
+      # HealthCheckTimeoutSeconds: 5
+      # UnhealthyThresholdCount: 2
+      # TargetType: "instance"
+      # Matcher:
+          # HttpCode: "200"
+      # HealthyThresholdCount: 5
+      VpcId: !Ref VPC
+      # Name: "target-group-1"
+      # HealthCheckEnabled: true
+      # TargetGroupAttributes:
+        # -
+          # Key: "stickiness.enabled"
+          # Value: "false"
+        # -
+          # Key: "deregistration_delay.timeout_seconds"
+          # Value: "300"
+        # -
+          # Key: "stickiness.type"
+          # Value: "lb_cookie"
+        # -
+          # Key: "stickiness.lb_cookie.duration_seconds"
+          # Value: "86400"
+        # -
+          # Key: "slow_start.duration_seconds"
+          # Value: "0"
+        # -
+          # Key: "load_balancing.algorithm.type"
+          # Value: "round_robin"
+
+  # TargetGroup2:
+    # Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    # Properties:
+      # HealthCheckIntervalSeconds: 30
+      # HealthCheckPath: "/"
+      # Port: 80
+      # Protocol: "HTTP"
+      # HealthCheckPort: "traffic-port"
+      # HealthCheckProtocol: "HTTP"
+      # HealthCheckTimeoutSeconds: 5
+      # UnhealthyThresholdCount: 2
+      # TargetType: "instance"
+      # Matcher:
+          # HttpCode: "200"
+      # HealthyThresholdCount: 5
+      # VpcId: !Ref VPC
+      # Name: "target-group-2"
+      # HealthCheckEnabled: true
+      # TargetGroupAttributes:
+        # -
+          # Key: "stickiness.enabled"
+          # Value: "false"
+        # -
+          # Key: "deregistration_delay.timeout_seconds"
+          # Value: "300"
+        # -
+          # Key: "stickiness.type"
+          # Value: "lb_cookie"
+        # -
+          # Key: "stickiness.lb_cookie.duration_seconds"
+          # Value: "86400"
+        # -
+          # Key: "slow_start.duration_seconds"
+          # Value: "0"
+        # -
+          # Key: "load_balancing.algorithm.type"
+          # Value: "round_robin"
+
+  ListenerRule1:
+    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Properties:
+      # Priority: "1"
+      ListenerArn: !Ref HTTPSListener
+      Conditions:
+        -
+          # Field: "host-header"
+          Field: "http-header"
+          Values:
+            - "test1.blog.avrcr.com"
+      Actions:
+        -
+          Type: "forward"
+          TargetGroupArn: !Ref TargetGroup1
+          # Order: 1
+          ForwardConfig:
+            TargetGroups:
+              -
+                TargetGroupArn: !Ref Test1TargetGroup
+                Weight: 1
+            TargetGroupStickinessConfig:
+                Enabled: false
+
+  ListenerRule2:
+    Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    Properties:
+      Priority: "2"
+      ListenerArn: !Ref HTTPSListener
+      Conditions:
+        -
+          Field: "host-header"
+          Values:
+            - "test2.blog.com"
+      Actions:
+        -
+          Type: "forward"
+          TargetGroupArn: !Ref TargetGroup2
+          Order: 1
+          ForwardConfig:
+            TargetGroups:
+              -
+                TargetGroupArn: !Ref Test2TargetGroup
+                Weight: 1
+            TargetGroupStickinessConfig:
+                Enabled: false
+
+  HTTPSListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: "HTTPS"
+      SslPolicy: "ELBSecurityPolicy-2016-08"
+      Certificates:
+        -
+          CertificateArn: arn:aws:acm:eu-central-1:**************:certificate/*********************
+
+      DefaultActions:
+        -
+          Order: 1
+          TargetGroupArn: !Ref Test1TargetGroup
+          Type: "forward"
+
+  HTTPListener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+      DefaultActions:
+        -
+          Order: 1
+          RedirectConfig:
+            Protocol: "HTTPS"
+            Port: "443"
+            Host: "#{host}"
+            Path: "/#{path}"
+            Query: "#{query}"
+            StatusCode: "HTTP_301"
+          Type: "redirect"
 
 #================================== OUTPUTS ====================================
 Outputs:
@@ -350,15 +609,30 @@ Outputs:
       Name: !Join [ "-", [ !Ref "Environment", "PublicSubnetB" ] ]
 
   # WebsiteURL:
-    # Value: !GetAtt 
+    # Value: !GetAtt
       # - S3Bucket
       # - WebsiteURL
     # Description: URL for website hosted on S3
   # S3BucketSecureURL:
-    # Value: !Join 
+    # Value: !Join
       # - ''
       # - - 'https://'
-        # - !GetAtt 
+        # - !GetAtt
           # - S3Bucket
           # - DomainName
     # Description: Name of S3 bucket to hold website content
+  ALB:
+    Description: The created loadbalancer
+    Value: !Ref ApplicationLoadBalancer
+
+  TargetGroup1:
+    Description: The created TargetGroup 1
+    Value: !Ref Test1TargetGroup
+
+  TargetGroup2:
+    Description: The created TargetGroup 2
+    Value: !Ref Test2TargetGroup
+
+  LoadBalancerSecurityGroup:
+    Description: the securty group for the ALB
+    Value: !Ref ALBSecurityGroup
