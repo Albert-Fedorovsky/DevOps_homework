@@ -18,7 +18,7 @@
 
 Создал шаблон task-07.yaml для выполнения требований задания на инфраструктуре AWS
 
-*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway" для VPC и групп безопастности.* 
+*Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway", групп безопастности, таблиц маршрутизации.* 
 
 **Установка ПО на Windows 10:**
 
@@ -98,13 +98,16 @@ aws s3api put-bucket-acl --bucket task-07 --grant-read uri=http://acs.amazonaws.
 
 **Загрузка файла index.html на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
-
 aws s3 cp index.html s3://task-07/index.html
+
+aws s3 cp index2.html s3://task-07/index2.html
 
 
 **Получение файла index.html из S3 bucket с именем task-07 AWS CLI на Amazon Linux 2 AMI** 
 
 aws s3 cp s3://task-07/index.html /usr/share/nginx/html/
+
+aws s3 cp s3://task-07/index2.html /usr/share/nginx/html/index.html
 
 **Получение перечня запущенных S3 buckets при помощий AWS CLI c Ubuntu_20**
 
@@ -113,6 +116,8 @@ aws s3 ls
 **Удаление файла index.html на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
 aws s3 rm s3://task-07/index.html
+
+aws s3 rm s3://task-07/index2.html
 
 **Удаление S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
@@ -168,11 +173,19 @@ aws cloudformation delete-stack --stack-name task-07
 
 **Получение информации по запущенным EC2 инстансам при помощий AWS CLI c Ubuntu_20**
 
-*https://docs.aws.amazon.com/cli/latest/reference/ec2/describe-instances.html*
+*https://docs.aws.amazon.com/cli/latest/reference/ec2/*
 
 aws ec2 describe-instances 
 
 aws ec2 describe-instances  --filters Name=instance-type,Values=t2.micro | grep PublicIpAddress
+
+**Получение информации по Application Loadbalancers при помощий AWS CLI c Ubuntu_20**
+
+*https://docs.aws.amazon.com/cli/latest/reference/elbv2/*
+
+aws elbv2 describe-load-balancers
+
+aws elbv2 describe-load-balancers | grep DNSName
 
 **Конфигурация NGINX на EC2 инстансе**
 
