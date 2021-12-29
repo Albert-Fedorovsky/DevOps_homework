@@ -39,6 +39,7 @@ Metadata:
           - S3BucketName
 
 Parameters:
+#https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/parameters-section-structure.html
   Environment:
     Type: String
     Default: "task-07"
@@ -346,6 +347,41 @@ Resources:
             systemctl start nginx.service
             aws s3 cp s3://${S3BucketName}/index2.html /usr/share/nginx/html/index.html
 
+#=============================== EC2 AutoRecovery ==============================
+  # RecoveryTestAlarm1:
+    # Type: AWS::CloudWatch::Alarm
+    # Properties:
+      # AlarmDescription: Trigger a recovery when instance status check fails for 15 consecutive minutes.
+      # Namespace: AWS/EC2
+      # MetricName: StatusCheckFailed_System
+      # Statistic: Minimum
+      # Period: '60'
+      # EvaluationPeriods: '15'
+      # ComparisonOperator: GreaterThanThreshold
+      # Threshold: '0'
+      # AlarmActions: [ !Sub "arn:aws:automate:${AWS::Region}:ec2:recover" ]
+      # Dimensions:
+      # - Name: EC2Instance1
+        # Value:
+          # Ref: EC2Instance1
+  
+  # RecoveryTestAlarm2:
+    # Type: AWS::CloudWatch::Alarm
+    # Properties:
+      # AlarmDescription: Trigger a recovery when instance status check fails for 15 consecutive minutes.
+      # Namespace: AWS/EC2
+      # MetricName: StatusCheckFailed_System
+      # Statistic: Minimum
+      # Period: '60'
+      # EvaluationPeriods: '15'
+      # ComparisonOperator: GreaterThanThreshold
+      # Threshold: '0'
+      # AlarmActions: [ !Sub "arn:aws:automate:${AWS::Region}:ec2:recover" ]
+      # Dimensions:
+      # - Name: EC2Instance2
+        # Value:
+          # Ref: EC2Instance2
+
 #=============================== Load balancers ================================
 #https://aws.amazon.com/ru/elasticloadbalancing/
 #https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-elb.html
@@ -484,11 +520,19 @@ Outputs:
 
   Instance1PublicIP:
     Description: First ec2 public IP
-    Value: !GetAtt EC2Instance2.PublicIp
+    Value: !GetAtt EC2Instance1.PublicIp
    
   Instance2PublicIP:
     Description: Second ec2 public IP
     Value: !GetAtt EC2Instance2.PublicIp
+  
+  Instance1PrivateIp:
+    Description: First ec2 private IP
+    Value: !GetAtt EC2Instance1.PrivateIp
+    
+  Instance2PrivateIp:
+    Description: First ec2 private IP
+    Value: !GetAtt EC2Instance2.PrivateIp
     
   AppLoadbalancerDNSName:
     Description: Application loadbalancer DNS Name
