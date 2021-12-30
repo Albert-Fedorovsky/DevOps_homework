@@ -119,6 +119,10 @@ aws s3 rm s3://task-07/index.html
 
 aws s3 rm s3://task-07/index2.html
 
+**Удаление всех файлов на S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
+
+aws s3 rm s3://task-07/ --recursive
+
 **Удаление S3 bucket с именем task-07 при помощий AWS CLI на Ubuntu_20**
 
 aws s3 rb s3://task-07
@@ -206,3 +210,11 @@ sudo systemctl enable nginx.service
 sudo systemctl start nginx.service
 
 sudo systemctl status nginx.service
+
+**Создал скрипты обёртки для управления стеком AWS cloudformation**
+
+task-07-start.sh - развёртывает стек
+
+task-07-stop.sh - удаляет стек
+
+task-07-update.sh - обновляет конфигурацию стека
