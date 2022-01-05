@@ -190,7 +190,7 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
 
   --get-raw-data - activate the output of raw data with a description of all available snapshots from AWS.
   Supported values: the command is called without a value
-  Example: --get-raw-data enable
+  Example: --get-raw-data
 
   --help - displays this help.
   Supported values: the command is called without a value
