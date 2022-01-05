@@ -100,7 +100,10 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
 
 #### Описание скрипта:
 
-  Скрипт требует установленной и настройнной нативной утилиты aws cli. Пользователь должен обладать правами доступа чтение и запись сервиса AWS EC2.
+  Скрипт требует установленной и настройнной нативной утилиты aws cli. Пользователь должен обладать правами доступа чтение и запись сервиса AWS EC2../task-10.sh
+
+использование скрипта:
+./task-10.sh <Par1> <Par2> ... <ParN> <--Com1> <Com1Val> <--Com2> <Com2Val> ... <--ComN> <ComNVal>
 
   <ParN> - это параметры, которые скрипт ищет  в описании снимка. Из этих параметров формируются строки отчёта. Параметры могут быть любым текстом или набором цифр, например "SnapshotId", "VolumeId",  "Description" или любые другие. Параметры можно задавать без учёта регистра. Также можно вводить имя параметра частично. Например, если ввести "id" - скрипт выведет в отчёт все параметры, содержащие в своём имени "id" и их значения.
 Скрипт также обрабатывает один специальный параметр "Age". В отличае от остальных, которые просто транслируются от AWS, "Age" вычисляется скриптом. "Age" - это возраст найденных снимков на момент вызова скрипта. Для работы скрипту нужно передать хотябы один параметр.
@@ -109,7 +112,7 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
 
   Пример: ./task-10.sh id age description
 
-  <--Com> и <ComNPar> - это соответственно команды и параметры этих команд. Все команды являются необязательными. Скрипт поддерживает следующие команды и значения:
+  <--Com> и <ComNVal> - это соответственно команды и значения этих команд. Все команды являются необязательными. Скрипт поддерживает следующие команды и значения:
 
   --age-dimension - установка единиц измерения минимального возраста снимков входящих отчёт
 
@@ -139,7 +142,11 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
 
   Пример: --get-raw-data enable
 
+  Поддерживаемые значения:  команда вызывается без значения
+
   --help - выводит эту справку.
+
+  Поддерживаемые значения:  команда вызывается без значения
 
   Пример:  --help
 
@@ -156,14 +163,14 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
   The ./task-10.sh script requires the aws cli native utility installed and configured. The user must have read / write access to the AWS EC2 service.
 
 ./task-10.sh script usage:
-./task-10.sh <Par1> <Par2> ... <ParN> <--Com1> <Com1Par> <--Com2> <Com2Par> ... <--ComN> <ComNPar>
+./task-10.sh <Par1> <Par2> ... <ParN> <--Com1> <Com1Val> <--Com2> <Com2Val> ... <--ComN> <ComNVal>
 
   <ParN> are the parameters that the script looks for in the snapshot description. Report lines are formed from these parameters. Parameters can be any text or a set of numbers, for example "SnapshotId", "VolumeId", "Description" or any others. Parameters can be set case-insensitively. You can also enter the name of the parameter partially. For example, if you enter "id", the script will display all parameters containing "id" and their values in their name.
   The script also handles one special parameter "Age". Unlike the others, which are simply broadcast from AWS, "Age" is calculated by the script. "Age" is the age of the found snapshots at the time the script was called. For the script to work, you need to pass at least one parameter.
   Supported values: values can be any text or set of numbers
   Example: ./task-10.sh id description
 
-  <--Com> and <ComNPar> are the commands and parameters of these commands, respectively. All commands are optional. The script supports the following commands and values:
+  <--Com> and <ComNVal> are the commands and values of these commands, respectively. All commands are optional. The script supports the following commands and values:
 
   --age-dimension - set the units of measure for the minimum age of images for incoming reports
   Supported values: seconds | minutes | hours | days
@@ -182,10 +189,11 @@ aws ec2 delete-snapshot --snapshot-id snap-1234567890abcdef0
   Example: --snapshots-action copy
 
   --get-raw-data - activate the output of raw data with a description of all available snapshots from AWS.
-  Supported values: enable
+  Supported values: the command is called without a value
   Example: --get-raw-data enable
 
   --help - displays this help.
+  Supported values: the command is called without a value
   Example: --help
 
 #### **The format of the data output by the script:**

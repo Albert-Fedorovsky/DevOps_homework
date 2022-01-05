@@ -20,14 +20,14 @@ function show_help
   echo "  The $0 script requires the aws cli native utility installed and configured. The user must have read / write access to the AWS EC2 service."
   printf "\n"
   echo "$0 script usage:"
-  echo "$0 <Par1> <Par2> ... <ParN> <--Com1> <Com1Par> <--Com2> <Com2Par> ... <--ComN> <ComNPar>"
+  echo "$0 <Par1> <Par2> ... <ParN> <--Com1> <Com1Val> <--Com2> <Com2Val> ... <--ComNVal> <ComNVal>"
   printf "\n"
   echo "  <ParN> are the parameters that the script looks for in the snapshot description. Report lines are formed from these parameters. Parameters can be any text or a set of numbers, for example \"SnapshotId\", \"VolumeId\", \"Description\" or any others. Parameters can be set case-insensitively. You can also enter the name of the parameter partially. For example, if you enter \"id\", the script will display all parameters containing \"id\" and their values ​​in their name."
   echo "  The script also handles one special parameter \"Age\". Unlike the others, which are simply broadcast from AWS, \"Age\" is calculated by the script. \"Age\" is the age of the found snapshots at the time the script was called. For the script to work, you need to pass at least one parameter."
   echo "  Supported values: values ​​can be any text or set of numbers"
   echo "  Example: $0 id description"
   printf "\n"
-  echo "  <--Com> and <ComNPar> are the commands and parameters of these commands, respectively. All commands are optional. The script supports the following commands and values:"
+  echo "  <--Com> and <ComNVal> are the commands and values of these commands, respectively. All commands are optional. The script supports the following commands and values:"
   printf "\n"
   echo "  --age-dimension - set the units of measure for the minimum age of images for incoming reports"
   echo "  Supported values: seconds | minutes | hours | days"
@@ -46,9 +46,11 @@ function show_help
   echo "  Example: --snapshots-action copy"
   printf "\n"
   echo "  --get-raw-data - activate the output of raw data with a description of all available snapshots from AWS."
+  echo "  Supported values: the command is called without a value"
   echo "  Example: --get-raw-data"
   printf "\n"
   echo "  --help - displays this help."
+  echo "  Supported values: the command is called without a value"
   echo "  Example: --help"
   printf "\n"
   echo "  The format of the data output by the script:"
@@ -168,10 +170,10 @@ if [ "$#" -gt 0 ] # если хотябы один параметр переда
           fi
       elif [ "${!count}" == "--get-raw-data" ] # активировать вывод сырых данных от AWS
         then
-          raw_data="yes"          
+          raw_data="yes"
       elif [ "${!count}" == "--help" ] # вызов справки
         then
-          show_help          
+          show_help
       else # все остальные аргументы используются как параметры форминуремого отчёта
         searching_args+="${!count} "
       fi
@@ -344,14 +346,14 @@ function generate_report
 # Формируем отчёт скрипта и подсчитываем, сколько в нём строк, если он не пустой
 report=$(generate_report)
 if [ -n "$report" ] # проверяем не пуст ли отчёт
-  
+
   # Отчёт не пуст
   then
     echo "$report"
     repeat_number=$(echo "$report" | wc | tr -s " " | cut -c 2- | cut -d " " -f 1)
 
 # Если отчёт пуст так то никаких команд далее не посылаем
-else  
+else
   repeat_number="0"
 fi
 
@@ -369,21 +371,21 @@ for (( count=1; count<="$repeat_number"; count++ ))
 do
   # Из подготовленного выше списка выделяем текущий SnapshotId
   snapshot_id_current=$(echo "$snapshots_id_list" | head -n "$count" | tail -n 1)
-  
+
   # Из подготовленного выше списка выделяем текущий Description
   description_current=$(echo "$descriptions_list" | head -n "$count" | tail -n 1)
-  
+
   # Если разрешено создание копий выбранных снимков - выполняем копирование
   if [ "$copy_selected" == "yes" ]
     then
-      echo "$0 script: trying to make a copy of selected snapshots:"      
+      echo "$0 script: trying to make a copy of selected snapshots:"
       aws ec2 copy-snapshot --source-region "$aws_region" --source-snapshot-id "$snapshot_id_current" --description "Copy of: $description_current"
   fi
-  
+
   # Если разрешено удаление выбранных снимков - выполняем удаление
   if [ "$delete_selected" == "yes" ]
     then
-      echo "$0 script: trying to delete selected snapshots:"      
+      echo "$0 script: trying to delete selected snapshots:"
       aws ec2 delete-snapshot --snapshot-id "$snapshot_id_current"
   fi
 done
