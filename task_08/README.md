@@ -1,6 +1,6 @@
-# task-08
+## **task-08**
 
-#### Работы по восьмому заданию:
+**Работы по восьмому заданию:**
 
 **Регистрация в консоли Amazon:**
 
@@ -8,10 +8,11 @@
 
 Авторизовался в своей консоли управления на https://console.aws.amazon.com/
 
-В веб интерфесе AWS консоли, в разделе Identity and Access Management (IAM):
+В веб интерфейсе AWS консоли, в разделе Identity and Access Management (IAM):
 
-- создал группу пользователей (user group) admins, с политикой AdministratorAccess
-- создал пользователя (user)  admin1  и добавил его в группу admins для управления инфраструктурой через aws cli
+·    создал группу пользователей (user group) admins, с политикой AdministratorAccess
+
+·    создал пользователя (user) admin1 и добавил его в группу admins для управления инфраструктурой через aws cli
 
 **Установка ПО на Windows 10:**
 
@@ -59,7 +60,7 @@ terraform --version
 
 *Установка и настройка текстового редактора Atom*
 
-на сайте atom  в раздел руководства по установке  https://flight-manual.atom.io/getting-started/sections/installing-atom/ получаем инструкции по установке
+на сайте atom в раздел руководства по установке https://flight-manual.atom.io/getting-started/sections/installing-atom/ получаем инструкции по установке
 
 wget -qO - https://packagecloud.io/AtomEditor/atom/gpgkey | sudo apt-key add -
 
@@ -83,15 +84,15 @@ sudo apt-get install atom
 
 aws configure
 
-AWS Access Key ID [None]:  `<Access key ID>`
+AWS Access Key ID [None]: <Access key ID>
 
-AWS Secret Access Key [None]: ` <Secret access key>`
+AWS Secret Access Key [None]: <Secret access key>
 
-Default region name [None]: `eu-central-1`
+Default region name [None]: eu-central-1
 
-Default output format [None]: `json`
+Default output format [None]: json
 
-**Создание пары ключей RSA для EC2 инстансов при помощи AWS CLI c Ubuntu_20**
+**Создание** **пары** **ключей** **RSA** **для** **EC2** **инстансов** **при** **помощи** **AWS CLI c Ubuntu_20**
 
 aws ec2 create-key-pair --key-name my-new-key-pair
 
@@ -99,7 +100,7 @@ aws ec2 create-key-pair --key-name my-new-key-pair --query "KeyMaterial" --outpu
 
 chmod go-rwx my-new-key-pair.pem
 
-**Просмотр перечня пар ключей EC2 инстансов через AWS CLI на Ubuntu_20****
+**Просмотр перечня пар ключей EC2 инстансов через AWS CLI на Ubuntu_20\****
 
 aws ec2 describe-key-pairs 
 
@@ -113,34 +114,33 @@ export AWS_SECRET_ACCESS_KEY=<Secret access key>
 
 export AWS_DEFAULT_REGION=eu-central-1
 
+***Создал шаблон terrafom в соответствии с требованиями задания, состоящий из следующих файлов:\***
 
+·    main.tf - описание основных ресурсов стека
 
-***Создал шаблон terrafom в соответствии с требованиями задания, состоящий из следующих файлов:***
+·    outputs.tf - описание некоторых параметров ресурсов, печатаемых terraform по завершению создания стека, требующихся для дальнейшей работы со стеком
 
-- main.tf - описание основных ресурсов стека
-- outputs.tf - описание некоторых параметров ресурсов, печатаемых terraform по завершению создания стека, требующихся для дальнейшей работы со стеком
-- variables.tf - описание внешних переменных, используемых при создании стека
-- terraform.tfvars - значения, инициализирующие внешние переменные при создании стека
+·    variables.tf - описание внешних переменных, используемых при создании стека
+
+·    terraform.tfvars - значения, инициализирующие внешние переменные при создании стека
 
 *Примечание: для AWS на схеме в задании не хватает модуля "Internet Gateway", групп безопастности, таблиц маршрутизации, "Autoscaling Group".* 
 
-***Дальнейшие действия выполнялись в консоли на виртульной мошине с Ubuntu_20***
+***Дальнейшие действия выполнялись в консоли на виртуальной машине с Ubuntu_20\***
 
+**Инициализация terrafom (подгрузка инструментария в зависимости от кода во всех файлах проекте)** 
 
-
-**Инициальзация terrafom (подгрзуа инструментария в зависимости от кода во всех файлах  проекте) **
-
-*перейти в  папку проекта и выполнить*:
+*перейти в папку проекта и выполнить*:
 
 terraform init
 
-**Вывод плана проекта terrafom перед его исполнением **
+**Вывод плана проекта terrafom перед его исполнением** 
 
 *План создания:*
 
 terraform plan
 
-*План унечтожения:*
+*План уничтожения:*
 
 terraform plan -destroy
 
@@ -178,23 +178,23 @@ terraform destroy
 
 yes
 
-**Тестирование функций terraform**
+**Тестирование** **функций** **terraform**
 
 terraform console
 
 *exit - для выхода*
 
-**Печать определённые в шаблоне выходные данные **
+**Печать определённые в шаблоне выходные данные** 
 
 terraform output
 
 *Примечание: сначала нужно выполнить terraform apply*
 
-**Печать текущего состояния инфрастуктуры (из файла .tfstate) **
+**Печать текущего состояния инфраструктуры (из файла .tfstate)** 
 
 terraform show
 
-**Создание графов при помощие terraform:**
+**Создание графов при помощи terraform:**
 
 *https://runebook.dev/ru/docs/terraform/commands/graph*
 
@@ -204,3 +204,4 @@ sudo apt-get install graphviz
 
 terraform graph | dot -Tsvg > graph.svg
 
+ 
