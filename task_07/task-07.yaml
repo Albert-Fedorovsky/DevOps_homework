@@ -7,6 +7,9 @@
 #     - Internet Gateway - 1 item
 #     - Subnets - 2 items
 #     - RouteTables - 1 item
+#   Securitty:
+#     - Security grops - 1 item
+#     - IAM role - 1 item
 #   Resouces:
 #     - EC2 instances - 2 items
 #     - Application loadbalancer - 1 item
