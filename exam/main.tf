@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-# Andersen DevOps cource task-08
+# Andersen DevOps cource exam
 # Terraform template for AWS infrastructure
 # Provision Highly Availabe Web in any Region
 # Resouces:
@@ -11,10 +11,9 @@
 #   Securitty:
 #     - Security grops - 1 item
 #     - IAM role - 1 item
-#   Resouces:
-#     - S3 buckets - 1 items
-#     - Custom template script to create index.html
-#     - Autoscaling group with two EC2 instances - 1 item
+#   Resouces:#
+#     - Custom scripts to create initialize instances.
+#     - Autoscaling group with one EC2 instances - 1 item
 #     - Application loadbalancer - 1 item
 # ------------------------------------------------------------------------------
 
@@ -42,52 +41,20 @@ data "aws_ami" "latest_amazon_linux" {
     values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
-# ------------------------------------------------------------------------------
-
-# -------------------------- Create S3 bucket ----------------------------------
-# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket
-resource "aws_s3_bucket" "main" {
-  bucket        = var.common_tags.Project
-  acl           = "private"
-  force_destroy = true
-  tags = merge(
-    { Name = "index-html-bucket" },
-    var.common_tags,
-    { Region = var.region }
-  )
-}
-
-# https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource
-# https://www.terraform.io/language/resources/provisioners/local-exec
-resource "null_resource" "index_html_create" {
-  depends_on = [aws_s3_bucket.main]
-  triggers = {
-    trigger_var = templatefile("user-data-s3.sh.tpl", {
-      f_name = "Albert",
-      l_name = "Fedorovsky",
-      instance_parameters = {
-        Instance-type = "${var.instance_type}"
-        Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
-        Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
-      },
-      common_tags = var.common_tags,
-      region      = var.region,
-      project     = var.common_tags.Project
-    })
+data "aws_ami" "latest_ubuntu_20" {
+  owners      = ["099720109477"]
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
   }
-  provisioner "local-exec" {
-    command = templatefile("user-data-s3.sh.tpl", {
-      f_name = "Albert",
-      l_name = "Fedorovsky",
-      instance_parameters = {
-        Instance-type = "${var.instance_type}"
-        Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
-        Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
-      },
-      common_tags = var.common_tags,
-      region      = var.region,
-      project     = var.common_tags.Project
-    })
+}
+data "aws_ami" "my_jenkins_on_ubuntu_20" {
+  owners      = ["854621685927"]
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["Jenkins-on-Ubuntu-20-version-*"]
   }
 }
 # ------------------------------------------------------------------------------
@@ -95,7 +62,7 @@ resource "null_resource" "index_html_create" {
 # ------------------------------- Network --------------------------------------
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc
 resource "aws_vpc" "main" {
-  depends_on       = [null_resource.index_html_create]
+  # depends_on       = [null_resource.index_html_create]
   cidr_block       = var.main_vpc_cidr_block
   instance_tenancy = "default"
 
@@ -196,8 +163,8 @@ resource "aws_security_group" "main" {
 }
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile
-resource "aws_iam_instance_profile" "bastion" {
-  name = "bastion-profile"
+resource "aws_iam_instance_profile" "jenkins" {
+  name = "jenkins-profile"
   role = aws_iam_role.s3-access.name
 }
 
@@ -243,27 +210,31 @@ resource "aws_iam_policy" "root" {
 
 # -------------------------- Launch instances ----------------------------------
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_configuration
-resource "aws_launch_configuration" "main" {
-  name_prefix = "LC-${var.common_tags.Project}-"
+resource "aws_launch_configuration" "jenkins" {
+  name_prefix = "Jenkins-LC-${var.common_tags.Project}-"
   # name                        = "LC-${var.common_tags.Project}-"
-  image_id                    = data.aws_ami.latest_amazon_linux.id
+  # image_id = data.aws_ami.latest_ubuntu_20.id
+  image_id = data.aws_ami.my_jenkins_on_ubuntu_20.id
+  root_block_device {
+    volume_size = "12"
+  }
   instance_type               = var.instance_type
   key_name                    = var.instance_key_name
-  iam_instance_profile        = aws_iam_instance_profile.bastion.id
+  iam_instance_profile        = aws_iam_instance_profile.jenkins.id
   associate_public_ip_address = var.instance_public_ip_enable
   security_groups             = [aws_security_group.main.id]
-  user_data = templatefile("user-data.sh.tpl", {
-    f_name = "Albert",
-    l_name = "Fedorovsky",
-    instance_parameters = {
-      Instance-type = "${var.instance_type}"
-      Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
-      Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
-    },
-    common_tags = var.common_tags,
-    region      = var.region,
-    project     = var.common_tags.Project
-  })
+  # user_data = templatefile("user-data-jenkins-on-ubuntu-20.sh.tpl", {
+  #   f_name = "Albert",
+  #   l_name = "Fedorovsky",
+  #   instance_parameters = {
+  #     Instance-type = "${var.instance_type}"
+  #     Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
+  #     Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
+  #   },
+  #   common_tags = var.common_tags,
+  #   region      = var.region,
+  #   project     = var.common_tags.Project
+  # })
   lifecycle {
     create_before_destroy = true
   }
@@ -271,23 +242,22 @@ resource "aws_launch_configuration" "main" {
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group
 # https://coderoad.ru/62558731/%D0%9F%D1%80%D0%B8%D1%81%D0%BE%D0%B5%D0%B4%D0%B8%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5-Application-Load-Balancer-%D0%BA-Auto-Scaling-Group-%D0%B2-Terraform-%D0%B4%D0%B0%D0%B5%D1%82
-resource "aws_autoscaling_group" "main" {
-  name = "ASG-${aws_launch_configuration.main.name}"
+resource "aws_autoscaling_group" "jenkins" {
+  name = "Jenkins-ASG-${aws_launch_configuration.jenkins.name}"
   # name_prefix = "ASG-${var.common_tags.Project}-"
   # name     = "ASG-${var.common_tags.Project}-"
-  min_size = 2
-  max_size = 2
+  min_size = 1
+  max_size = 1
   # min_elb_capacity          = 2 # That parameter broke app loadbalancer!
   health_check_grace_period = 60
   health_check_type         = "ELB"
-  desired_capacity          = 2
+  desired_capacity          = 1
   # force_delete         = true
-  launch_configuration = aws_launch_configuration.main.name
+  launch_configuration = aws_launch_configuration.jenkins.name
   vpc_zone_identifier  = [aws_subnet.public_a.id, aws_subnet.public_b.id]
-
   dynamic "tag" {
     for_each = {
-      Name  = "WebServer in autoscaling group"
+      Name  = "Jenkins server in autoscaling group"
       Owner = "${var.common_tags.Owner}"
     }
     content {
@@ -296,7 +266,6 @@ resource "aws_autoscaling_group" "main" {
       propagate_at_launch = true
     }
   }
-
   lifecycle {
     ignore_changes = [
       enabled_metrics,
@@ -340,6 +309,16 @@ resource "aws_lb_listener" "main" {
     target_group_arn = aws_lb_target_group.main.arn
   }
 }
+resource "aws_lb_listener" "secondary" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "8080"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.secondary.arn
+  }
+}
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group
 resource "aws_lb_target_group" "main" {
@@ -360,10 +339,118 @@ resource "aws_lb_target_group" "main" {
   }
   deregistration_delay = "20"
 }
+resource "aws_lb_target_group" "secondary" {
+  name = "LB-TG-S-${var.common_tags.Project}"
+  # name     = "LB-TG-task-08"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+  health_check {
+    enabled             = true
+    healthy_threshold   = "3"
+    interval            = "30"
+    matcher             = "200"
+    port                = "8080"
+    protocol            = "HTTP"
+    timeout             = "15"
+    unhealthy_threshold = "3"
+  }
+  deregistration_delay = "20"
+}
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_attachment
-resource "aws_autoscaling_attachment" "main" {
-  autoscaling_group_name = aws_autoscaling_group.main.id
-  alb_target_group_arn   = aws_lb_target_group.main.arn
+# resource "aws_autoscaling_attachment" "main" {
+#   autoscaling_group_name = aws_autoscaling_group.main.id
+#   alb_target_group_arn   = aws_lb_target_group.main.arn
+# }
+
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group_attachment
+resource "aws_lb_target_group_attachment" "web_server_1" {
+  target_group_arn = aws_lb_target_group.main.arn
+  target_id        = aws_instance.web_server_1.id
+  port             = 80
+}
+resource "aws_lb_target_group_attachment" "web_server_2" {
+  target_group_arn = aws_lb_target_group.main.arn
+  target_id        = aws_instance.web_server_2.id
+  port             = 80
+}
+resource "aws_lb_target_group_attachment" "web_server_1_s" {
+  target_group_arn = aws_lb_target_group.secondary.arn
+  target_id        = aws_instance.web_server_1.id
+  port             = 8080
+}
+resource "aws_lb_target_group_attachment" "web_server_2_s" {
+  target_group_arn = aws_lb_target_group.secondary.arn
+  target_id        = aws_instance.web_server_2.id
+  port             = 8080
+}
+
+# https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance
+resource "aws_instance" "web_server_1" {
+  ami                    = data.aws_ami.latest_amazon_linux.id
+  instance_type          = var.instance_type
+  vpc_security_group_ids = [aws_security_group.main.id]
+  key_name               = var.instance_key_name
+  # monitoring                  = var.detailed_monitoring
+  associate_public_ip_address = var.instance_public_ip_enable
+  subnet_id                   = aws_subnet.public_a.id
+  private_ip                  = var.web_server_1_private_ip
+  security_groups             = [aws_security_group.main.id]
+  user_data = templatefile("user-data-web-server.sh.tpl", {
+    f_name = "Albert",
+    l_name = "Fedorovsky",
+    instance_parameters = {
+      Instance-type = "${var.instance_type}"
+      Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
+      Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
+    },
+    common_tags = var.common_tags,
+    region      = var.region,
+    project     = var.common_tags.Project
+  })
+  tags = merge(
+    { Name = "web-server-1" },
+    var.common_tags,
+    { Region = var.region }
+  )
+  lifecycle {
+    ignore_changes = [
+      security_groups,
+    ]
+  }
+}
+resource "aws_instance" "web_server_2" {
+  ami                    = data.aws_ami.latest_amazon_linux.id
+  instance_type          = var.instance_type
+  vpc_security_group_ids = [aws_security_group.main.id]
+  key_name               = var.instance_key_name
+  # monitoring                  = var.detailed_monitoring
+  associate_public_ip_address = var.instance_public_ip_enable
+  subnet_id                   = aws_subnet.public_b.id
+  private_ip                  = var.web_server_2_private_ip
+  security_groups             = [aws_security_group.main.id]
+  user_data = templatefile("user-data-web-server.sh.tpl", {
+    f_name = "Albert",
+    l_name = "Fedorovsky",
+    instance_parameters = {
+      Instance-type = "${var.instance_type}"
+      Image-name    = "${data.aws_ami.latest_amazon_linux.name}"
+      Image-id      = "${data.aws_ami.latest_amazon_linux.id}"
+    },
+    common_tags = var.common_tags,
+    region      = var.region,
+    project     = var.common_tags.Project
+  })
+  tags = merge(
+    { Name = "web-server-2" },
+    var.common_tags,
+    { Region = var.region }
+  )
+  lifecycle {
+    ignore_changes = [
+      security_groups,
+    ]
+  }
 }
 # ------------------------------------------------------------------------------
