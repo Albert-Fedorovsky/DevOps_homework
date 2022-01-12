@@ -1,0 +1,97 @@
+---
+- name: flask_app delivery
+  hosts: servers
+  become: yes
+
+  tasks:
+  - name: Ensure subversion is present
+    apt:
+     name: subversion
+     state: present
+
+  - name: Ensure python-pip is present
+    apt:
+     name: "{{ packages }}"
+     state: present
+    vars:
+      packages:
+      - python-pip
+      - python3-pip
+
+  - name: Copy flask_app.service file
+    copy:
+     src: flask_app.service
+     dest: /lib/systemd/system/flask_app.service
+     owner: root
+     group: root
+     mode: u=rw,g=r,o=r
+
+  - name: Ensure flask_app.service is stopped
+    service:
+     name: flask_app
+     state: stopped
+
+# По непонятной причине модуль pip не устанавлевает flask
+# в рабочее окружение.
+#  - name: Ensure flask is present
+#    pip:
+#     name: flask
+#     umask: "0777"
+#     state: present
+#    become: True
+
+# Пришлось реализовать установку flask скриптом
+# Команда script также отказалась работать на вновь
+# развёрнутых серверах, со следующией ошибкой:
+# ...flask_install.sh: not found"
+# Никакие значения параметра remote_tmp в /etc/ansible/ansible.cfg 
+# на хосте Ansible не решают проблему...
+# 
+  # - name: Install flask
+    # script: /etc/ansible/playbooks/flask_install.sh
+    # args:
+      # chdir: /home/user/
+
+# Пришлось реализовать отдельно доставку скрипта:
+  - name: Transfer the flask_install.sh
+    copy: 
+      src: /etc/ansible/playbooks/flask_install.sh
+      dest: /home/user/
+      owner: root
+      group: root
+      mode: u=rw,g=r,o=r
+
+# Пришлось реализовать и отдельно исполнение скрипта:
+  - name: Execute the flask_install.sh
+    command: sh /home/user/flask_install.sh
+    
+
+
+# Модуль svn Ansible не доставляет отдельную папку из моего
+# репозитория домашних заданий github. Пришлось писать скрипт.
+# Анаогичная проблема и с доставкой скрипта flask_app_delivery.sh
+  # - name: Download new version of flask_app from github
+    # script: /etc/ansible/playbooks/flask_app_delivery.sh
+    
+# Пришлось реализовать отдельно доставку скрипта:
+  - name: Transfer the flask_app_delivery.sh
+    copy: 
+      src: /etc/ansible/playbooks/flask_app_delivery.sh
+      dest: /home/user/
+      owner: root
+      group: root
+      mode: u=rw,g=r,o=r
+
+# Пришлось реализовать и отдельно исполнение скрипта:
+  - name: Execute the flask_app_delivery.sh
+    command: sh /home/user/flask_app_delivery.sh
+
+  - name: Check flask_app.service is enabled
+    service:
+     name: flask_app
+     enabled: yes
+
+  - name: Ensure flask_app.service is started
+    service:
+     name: flask_app
+     state: started

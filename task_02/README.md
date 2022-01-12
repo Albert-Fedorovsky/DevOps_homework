@@ -32,7 +32,7 @@ Debian_10_web_server2 установлен статический IP 192.168.1.1
 
 **Установка ПО на Debian_10_web_server1 и Debian_10_web_server2:**
 
-sudo apt-get uptade
+sudo apt-get update
 
 sudo apt-get install ssh
 
@@ -102,7 +102,7 @@ sudo systemctl list-unit-files | grep enabled
 
 sudo apt-add-repository ppa:ansible/ansible
 
-sudo apt-get uptade
+sudo apt-get update
 
 sudo apt-get install ssh
 
@@ -123,16 +123,19 @@ sudo apt-get install git
 
 sudo apt install ansible
 
+sudo chown -R user /etc/ansible/
+
 **Базовая конфигурация Ansible:**
 
-sudo nano /etc/ansible/ansible.cfg
+nano /etc/ansible/ansible.cfg
 
 */etc/ansible/ansible.cfg:*
 
 `inventory       = /etc/ansible/hosts`
 `host_key_checking = False`
+`remote_tmp      = /tmp/${USER}/ansible`
 
-sudo nano /etc/ansible/hosts
+nano /etc/ansible/hosts
 
 */etc/ansible/hosts:*
 `[servers]`
@@ -153,7 +156,7 @@ mkdir /etc/ansible/playbooks
 
 Плейбук yml:
 
-sudo nano /etc/ansible/playbooks/flask_app_delivery.yml
+nano /etc/ansible/playbooks/flask_app_delivery.yml
 
 */etc/ansible/playbooks/flask_app_delivery.yml:*
 
@@ -163,11 +166,12 @@ sudo nano /etc/ansible/playbooks/flask_app_delivery.yml
   `become: yes`
 
   `tasks:`
+  
   - `name: Ensure subversion is present`
     `apt:`
      `name: subversion`
      `state: present`
-
+  
   - `name: Ensure python-pip is present`
     `apt:`
      `name: "{{ packages }}"`
@@ -176,7 +180,7 @@ sudo nano /etc/ansible/playbooks/flask_app_delivery.yml
       `packages:`
     
      `- python-pip`
-
+  
      `- python3-pip`
     
   - `name: Copy flask_app.service file`
@@ -210,7 +214,7 @@ sudo nano /etc/ansible/playbooks/flask_app_delivery.yml
 
 **Создание скрипта устанавливающего библиотеку flask на Debian_10_web_server1 и  Debian_10_web_server2:**
 
-sudo nano /etc/ansible/playbooks/flask_app_delivery.sh
+nano /etc/ansible/playbooks/flask_app_delivery.sh
 
 */etc/ansible/playbooks/flask_install.sh:*
 
@@ -219,7 +223,7 @@ sudo nano /etc/ansible/playbooks/flask_app_delivery.sh
 
 **Создание скрипта получающего новую версию flask_app с моего репозитория github на Debian_10_web_server1 и Debian_10_web_server2:**
 
-sudo nano /etc/ansible/playbooks/flask_app_delivery.sh
+nano /etc/ansible/playbooks/flask_app_delivery.sh
 
 */etc/ansible/playbooks/flask_app_delivery.sh:*
 
